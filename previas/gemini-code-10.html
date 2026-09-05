@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de Sermões e Estudos Bíblicos</title>
+  
+  <!-- CSS Quill.js -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <!-- CSS FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --border-color: #e0e0e0;
+      --accent-color: #27ae60;
+      --info-color: #2980b9;
+      --estudo-color: #8e44ad;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      margin: 0;
+      padding: 0 0 120px 0;
+      color: #333;
+    }
+
+    /* Navegação por Abas */
+    .nav-bar {
+      background: var(--primary-color);
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      color: #ecf0f1;
+      background: transparent;
+      border: none;
+      font-size: 0.95rem;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 20px;
+      transition: background 0.2s;
+    }
+
+    .nav-tab.active {
+      background: rgba(255,255,255,0.25);
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .aba-conteudo {
+      display: none;
+    }
+
+    .aba-conteudo.active {
+      display: block;
+    }
+
+    /* Cabeçalho do Editor e Formulários */
+    .header-inputs, .form-card, .estudo-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 12px;
+      width: 100%;
+    }
+
+    .input-group label {
+      font-weight: bold;
+      font-size: 0.9rem;
+      color: var(--primary-color);
+    }
+
+    input[type="text"], input[type="date"], input[type="time"], textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-sizing: border-box;
+      outline: none;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary-color);
+    }
+
+    .titulo-principal {
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    /* Estilo dos Blocos do Construtor de Sermão */
+    .bloco-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      border-left: 5px solid var(--primary-color);
+    }
+
+    .bloco-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .bloco-header input {
+      font-weight: bold;
+      border: none;
+      border-bottom: 1px dashed #ccc;
+      border-radius: 0;
+      padding: 4px;
+      margin: 0;
+      width: 60%;
+      font-size: 1.05rem;
+    }
+
+    .controles-bloco {
+      display: flex;
+      gap: 5px;
+    }
+
+    .btn-acao {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .btn-remover {
+      background: #e74c3c;
+      color: white;
+      border: none;
+    }
+
+    .editor-container {
+      min-height: 140px;
+    }
+
+    .ql-container.ql-snow {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    /* Botões Globais */
+    .btn-primario {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-sucesso {
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-info {
+      background-color: var(--info-color);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-estudo {
+      background-color: var(--estudo-color);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .acoes-container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 25px 0;
+    }
+
+    /* Toolbar Flutuante */
+    #barra-flutuante {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      border-radius: 12px;
+      padding: 12px 20px;
+      z-index: 1000;
+      border: 1px solid var(--border-color);
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+
+    .status-bar {
+      position: fixed;
+      top: 0;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 4px 12px;
+      border-bottom-left-radius: 6px;
+      border-bottom-right-radius: 6px;
+      font-size: 0.8rem;
+      z-index: 1001;
+    }
+
+    /* Listas e Cards */
+    .lista-sermoes, .lista-estudos {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .sermao-item-card, .estudo-item-card {
+      background: var(--card-bg);
+      padding: 18px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 4px solid var(--primary-color);
+    }
+
+    .estudo-item-card {
+      border-left-color: var(--estudo-color);
+    }
+
+    .sermao-item-info h3, .estudo-item-info h3 {
+      margin: 0 0 6px 0;
+      color: var(--primary-color);
+      font-size: 1.15rem;
+    }
+
+    .estudo-item-info h3 {
+      color: var(--estudo-color);
+    }
+
+    .sermao-item-detalhes, .estudo-item-detalhes {
+      font-size: 0.9rem;
+      color: #666;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .sermao-item-acoes, .estudo-item-acoes {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Agenda Grid */
+    .agenda-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .agenda-grid { grid-template-columns: 1fr; }
+    }
+
+    #calendario-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Modais */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 750px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .modal-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+
+    .modal-info-item {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 6px;
+      border-left: 3px solid var(--primary-color);
+    }
+
+    .bloco-visualizacao {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .bloco-visualizacao-titulo {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: var(--estudo-color);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .bloco-visualizacao-conteudo {
+      line-height: 1.5;
+      font-size: 1rem;
+      color: #333;
+      white-space: pre-wrap;
+    }
+
+    /* Template PDF */
+    #pdf-template { display: none; font-family: 'Georgia', serif; color: #2c3e50; padding: 20px; }
+    .pdf-header { border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px; }
+    .pdf-titulo { font-size: 20pt; font-weight: bold; margin: 0 0 10px 0; }
+    .pdf-meta-box { background: #f0ebe1; padding: 10px; border-radius: 4px; font-family: sans-serif; font-size: 9.5pt; margin-top: 10px; }
+    .pdf-bloco { margin-bottom: 18px; page-break-inside: avoid; }
+    .pdf-bloco-titulo { font-family: sans-serif; font-size: 12pt; font-weight: bold; border-left: 4px solid #2c3e50; padding-left: 8px; margin-bottom: 6px; text-transform: uppercase; }
+    .pdf-bloco-conteudo { font-size: 10.5pt; line-height: 1.5; text-align: justify; }
+  </style>
+</head>
+<body>
+
+  <div class="status-bar" id="status-salvamento">Pronto</div>
+
+  <!-- Barra de Navegação -->
+  <div class="nav-bar">
+    <button class="nav-tab active" onclick="trocarAba('editor')">📝 Construtor de Sermão</button>
+    <button class="nav-tab" onclick="trocarAba('lista')">📚 Sermões Construídos</button>
+    <button class="nav-tab" onclick="trocarAba('estudo-editor')">✏️ Construtor de Estudos</button>
+    <button class="nav-tab" onclick="trocarAba('estudo-lista')">📚 Estudos Realizados</button>
+    <button class="nav-tab" onclick="trocarAba('agenda')">📅 Programação & Agenda</button>
+  </div>
+
+  <div class="container">
+    
+    <!-- ABA 1: CONSTRUTOR DE SERMÃO -->
+    <div id="aba-editor" class="aba-conteudo active">
+      <div class="header-inputs">
+        <div class="input-row">
+          <input type="text" id="titulo" class="titulo-principal" placeholder="Título do Sermão...">
+          <input type="text" id="passagem" placeholder="Passagem Chave (ex: João 3:16)...">
+        </div>
+        <div class="input-row">
+          <input type="date" id="dataPregacao" title="Data da Pregação">
+          <input type="time" id="horarioPregacao" title="Horário do Culto">
+          <input type="text" id="local" placeholder="Local (ex: Igreja Central)...">
+          <input type="text" id="ocasio" placeholder="Ocasião (ex: Culto da Família)...">
+        </div>
+      </div>
+
+      <div id="lista-blocos"></div>
+
+      <div class="acoes-container">
+        <button class="btn-primario" onclick="adicionarNovoBloco()">+ Adicionar Bloco</button>
+        <button class="btn-sucesso" onclick="exportarParaPDF()">📄 Exportar para PDF</button>
+      </div>
+    </div>
+
+    <!-- ABA 2: SERMÕES CONSTRUÍDOS -->
+    <div id="aba-lista" class="aba-conteudo">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2>Biblioteca de Sermões</h2>
+        <button class="btn-primario" onclick="criarNovoSermaoVazio()">+ Novo Sermão</button>
+      </div>
+      <div id="container-lista-sermoes" class="lista-sermoes"></div>
+    </div>
+
+    <!-- ABA 3: CONSTRUTOR DE ESTUDOS BÍBLICOS -->
+    <div id="aba-estudo-editor" class="aba-conteudo">
+      <div class="estudo-card">
+        <h2 style="margin-top: 0; color: var(--estudo-color);">Estudo Indutivo de Passagem</h2>
+        
+        <div class="input-row">
+          <div class="input-group">
+            <label>Texto (Passagem Bíblica):</label>
+            <input type="text" id="est-texto" placeholder="Ex: Efésios 2:1-10">
+          </div>
+          <div class="input-group">
+            <label>Gênero Literário:</label>
+            <input type="text" id="est-genero" placeholder="Ex: Epístola, Narrativa, Poético...">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Diagramação / Estrutura da Passagem:</label>
+          <textarea id="est-diagramacao" placeholder="Esboço visual ou divisão dos versículos..."></textarea>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>Palavras-chave:</label>
+
+            <textarea id="est-palavrasChave" placeholder="Termos repetidos ou centrais..."></textarea>
+          </div>
+          <div class="input-group">
+            <label>Termos relacionados:</label>
+            <textarea id="est-termosRelacionados" placeholder="Significados no original, conexões..."></textarea>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>Passagens relacionadas (Referências Cruzadas):</label>
+            <textarea id="est-passagensRelacionadas" placeholder="Outros textos que explicam este..."></textarea>
+          </div>
+          <div class="input-group">
+            <label>Doutrinas relacionadas:</label>
+            <textarea id="est-doutrinasRelacionadas" placeholder="Ex: Soteriologia, Graça, Depravação..."></textarea>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Resumo da passagem:</label>
+          <textarea id="est-resumo" placeholder="Resumo em poucas frases do que o texto diz..."></textarea>
+        </div>
+
+        <div class="input-group">
+          <label>Insights e dúvidas:</label>
+          <textarea id="est-insightsDuvidas" placeholder="Anotações pessoais, perguntas para pesquisar..."></textarea>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>Foco da Condição Decaída (FCD):</label>
+            <textarea id="est-fcd" placeholder="Qual o problema humano/pecado abordado no texto?"></textarea>
+          </div>
+          <div class="input-group">
+            <label>Relevância da passagem:</label>
+            <textarea id="est-relevancia" placeholder="Por que este texto é importante hoje?"></textarea>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>ICT (Ideia Central do Texto):</label>
+            <input type="text" id="est-ict" placeholder="O que o autor bíblico quis dizer ao leitor original?">
+          </div>
+          <div class="input-group">
+            <label>Tese / Tema Principal:</label>
+            <input type="text" id="est-tese" placeholder="Declaração central do estudo...">
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>Propósito Básico:</label>
+            <input type="text" id="est-propositoBasico" placeholder="O objetivo geral da mensagem...">
+          </div>
+          <div class="input-group">
+            <label>Propósitos Específicos:</label>
+            <input type="text" id="est-propositosEspecificos" placeholder="Ações práticas que os ouvintes devem tomar...">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Tema da Mensagem:</label>
+          <input type="text" id="est-tema" placeholder="Título/Tema prático decorrente do estudo...">
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 4: ESTUDOS REALIZADOS -->
+    <div id="aba-estudo-lista" class="aba-conteudo">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2>Passagens Estudadas</h2>
+        <button class="btn-estudo" onclick="criarNovoEstudoVazio()">+ Novo Estudo</button>
+      </div>
+      <div id="container-lista-estudos" class="lista-estudos"></div>
+    </div>
+
+    <!-- ABA 5: PROGRAMAÇÃO E AGENDA -->
+    <div id="aba-agenda" class="aba-conteudo">
+      <div class="agenda-grid">
+        <div class="form-card">
+          <h3 style="margin-top:0;">Programar Pregação</h3>
+          <p style="font-size:0.85rem; color:#666; margin-bottom:15px;">Agende a data e o local antes de escrever o sermão.</p>
+          
+          <form id="form-programar" onsubmit="salvarProgramacaoRapida(event)">
+            <div style="margin-bottom:10px;">
+              <label style="font-size:0.85rem; font-weight:bold;">Título</label>
+              <input type="text" id="prog-titulo" placeholder="Ex: Amor de Deus" required>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <div style="flex: 2;">
+                <label style="font-size:0.85rem; font-weight:bold;">Data</label>
+                <input type="date" id="prog-data" required>
+              </div>
+              <div style="flex: 1;">
+                <label style="font-size:0.85rem; font-weight:bold;">Horário</label>
+                <input type="time" id="prog-horario">
+              </div>
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:0.85rem; font-weight:bold;">Local</label>
+              <input type="text" id="prog-local" placeholder="Ex: Congregação Sul">
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:0.85rem; font-weight:bold;">Ocasião</label>
+              <input type="text" id="prog-ocasio" placeholder="Ex: Culto da Família, Santa Ceia...">
+            </div>
+            <div style="margin-bottom:15px;">
+              <label style="font-size:0.85rem; font-weight:bold;">Passagem Chave</label>
+              <input type="text" id="prog-passagem" placeholder="Ex: Romanos 8:31">
+            </div>
+            <button type="submit" class="btn-sucesso" style="width:100%;">📌 Agendar no Calendário</button>
+          </form>
+        </div>
+
+        <div id="calendario-card">
+          <div id="calendar"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toolbar Flutuante do Editor de Sermões -->
+  <div id="barra-flutuante" class="ql-toolbar ql-snow">
+    <span class="ql-formats">
+      <select class="ql-header">
+        <option value="1">Título 1</option>
+        <option value="2">Título 2</option>
+        <option value="3">Título 3</option>
+        <option selected>Normal</option>
+      </select>
+    </span>
+    <span class="ql-formats">
+      <button class="ql-bold"></button>
+      <button class="ql-italic"></button>
+      <button class="ql-underline"></button>
+    </span>
+    <span class="ql-formats">
+      <button class="ql-list" value="ordered"></button>
+      <button class="ql-list" value="bullet"></button>
+    </span>
+    <span class="ql-formats">
+      <button class="ql-blockquote"></button>
+      <button class="ql-clean"></button>
+    </span>
+  </div>
+
+  <!-- Modal Generico para Sermões/Estudos -->
+  <div id="modal-visualizar" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-titulo" style="margin:0; color: var(--primary-color);"></h2>
+        <button class="modal-close" onclick="fecharModal()">&times;</button>
+      </div>
+      <div id="modal-corpo"></div>
+    </div>
+  </div>
+
+  <div id="pdf-template"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
+
+  <script>
+    const db = new Dexie("SermoesDB");
+    db.version(6).stores({
+      sermoes: "id, titulo, passagem, dataPregacao, horarioPregacao, local, ocasio, atualizadoEm",
+      estudos: "id, texto, genero, tema, atualizadoEm"
+    });
+
+    let SERMAO_ATUAL_ID = null;
+    let ESTUDO_ATUAL_ID = null;
+    const editoresQuill = {};
+    let calendarInstance = null;
+
+    const ESTRUTURA_PADRAO = ["Introdução", "Elucidação", "Pontos", "Aplicações", "Conclusão"];
+
+    const CAMPOS_ESTUDO = [
+      'texto', 'genero', 'diagramacao', 'palavrasChave', 'termosRelacionados', 
+      'passagensRelacionadas', 'doutrinasRelacionadas', 'resumo', 'insightsDuvidas', 
+      'fcd', 'relevancia', 'ict', 'tese', 'propositoBasico', 'propositosEspecificos', 'tema'
+    ];
+
+    function formatarDataEHoraBR(dataIso, hora) {
+      if (!dataIso) return 'Sem data';
+      const partes = dataIso.split('-');
+      let dataFormatada = dataIso;
+      if (partes.length === 3) {
+        dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+      return hora ? `${dataFormatada} às ${hora}` : dataFormatada;
+    }
+
+    // Navegação de Abas
+    function trocarAba(nomeAba) {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.remove('active'));
+
+      document.getElementById('barra-flutuante').style.display = 'none';
+
+      if (nomeAba === 'editor') {
+        document.querySelectorAll('.nav-tab')[0].classList.add('active');
+        document.getElementById('aba-editor').classList.add('active');
+        document.getElementById('barra-flutuante').style.display = 'flex';
+      } else if (nomeAba === 'lista') {
+        document.querySelectorAll('.nav-tab')[1].classList.add('active');
+        document.getElementById('aba-lista').classList.add('active');
+        carregarListaSermoes();
+      } else if (nomeAba === 'estudo-editor') {
+        document.querySelectorAll('.nav-tab')[2].classList.add('active');
+        document.getElementById('aba-estudo-editor').classList.add('active');
+      } else if (nomeAba === 'estudo-lista') {
+        document.querySelectorAll('.nav-tab')[3].classList.add('active');
+        document.getElementById('aba-estudo-lista').classList.add('active');
+        carregarListaEstudos();
+      } else if (nomeAba === 'agenda') {
+        document.querySelectorAll('.nav-tab')[4].classList.add('active');
+        document.getElementById('aba-agenda').classList.add('active');
+        carregarCalendario();
+      }
+    }
+
+    // --- MÓDULO CONSTRUTOR DE SERMÕES ---
+    function criarElementoBloco(idBloco, tituloBloco = '', conteudoHtml = '') {
+      const container = document.getElementById('lista-blocos');
+      const divBloco = document.createElement('div');
+      divBloco.className = 'bloco-card';
+      divBloco.id = `card-${idBloco}`;
+      
+      divBloco.innerHTML = `
+        <div class="bloco-header">
+          <input type="text" class="titulo-bloco" value="${tituloBloco}" placeholder="Nome do Bloco...">
+          <div class="controles-bloco">
+            <button class="btn-acao" onclick="moverBloco('${idBloco}', -1)">▲</button>
+            <button class="btn-acao" onclick="moverBloco('${idBloco}', 1)">▼</button>
+            <button class="btn-acao btn-remover" onclick="removerBloco('${idBloco}')">✕</button>
+          </div>
+        </div>
+        <div id="editor-${idBloco}" class="editor-container"></div>
+      `;
+
+      container.appendChild(divBloco);
+
+      const quill = new Quill(`#editor-${idBloco}`, {
+        theme: 'snow',
+        placeholder: `Escreva sobre: ${tituloBloco}...`,
+        modules: { toolbar: '#barra-flutuante' }
+      });
+
+      if (conteudoHtml) quill.root.innerHTML = conteudoHtml;
+
+      quill.on('text-change', dispararAutoSaveSermao);
+      divBloco.querySelector('.titulo-bloco').addEventListener('input', dispararAutoSaveSermao);
+
+      editoresQuill[idBloco] = quill;
+    }
+
+    function moverBloco(idBloco, direcao) {
+      const card = document.getElementById(`card-${idBloco}`);
+      if (!card) return;
+      if (direcao === -1 && card.previousElementSibling) {
+        card.parentNode.insertBefore(card, card.previousElementSibling);
+        dispararAutoSaveSermao();
+      } else if (direcao === 1 && card.nextElementSibling) {
+        card.parentNode.insertBefore(card.nextElementSibling, card);
+        dispararAutoSaveSermao();
+      }
+    }
+
+    function adicionarNovoBloco(titulo = 'Novo Ponto', conteudo = '') {
+      const idBloco = 'bloco_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+      criarElementoBloco(idBloco, titulo, conteudo);
+      dispararAutoSaveSermao();
+    }
+
+    function removerBloco(idBloco) {
+      if (document.querySelectorAll('.bloco-card').length <= 1) {
+        alert("O sermão deve ter pelo menos um bloco.");
+        return;
+      }
+      const card = document.getElementById(`card-${idBloco}`);
+      if (card) {
+        card.remove();
+        delete editoresQuill[idBloco];
+        dispararAutoSaveSermao();
+      }
+    }
+
+    let tempoEsperaSermao;
+    async function salvarSermaoLocalmente() {
+      if (!SERMAO_ATUAL_ID) return;
+
+      const titulo = document.getElementById('titulo').value;
+      const passagem = document.getElementById('passagem').value;
+      const dataPregacao = document.getElementById('dataPregacao').value;
+      const horarioPregacao = document.getElementById('horarioPregacao').value;
+      const local = document.getElementById('local').value;
+      const ocasio = document.getElementById('ocasio').value;
+      
+      const blocosData = [];
+      document.querySelectorAll('.bloco-card').forEach(card => {
+        const idBloco = card.id.replace('card-', '');
+        const tituloBloco = card.querySelector('.titulo-bloco').value;
+        const conteudoHtml = editoresQuill[idBloco] ? editoresQuill[idBloco].root.innerHTML : '';
+        blocosData.push({ id: idBloco, tituloBloco, conteudoHtml });
+      });
+
+      await db.sermoes.put({
+        id: SERMAO_ATUAL_ID,
+        titulo, passagem, dataPregacao, horarioPregacao, local, ocasio,
+        blocos: blocosData,
+        atualizadoEm: new Date().toISOString()
+      });
+
+      document.getElementById('status-salvamento').innerText = `Sermão salvo às ${new Date().toLocaleTimeString()}`;
+    }
+
+    function dispararAutoSaveSermao() {
+      document.getElementById('status-salvamento').innerText = "Salvando sermão...";
+      clearTimeout(tempoEsperaSermao);
+      tempoEsperaSermao = setTimeout(salvarSermaoLocalmente, 800);
+    }
+
+    ['titulo', 'passagem', 'dataPregacao', 'horarioPregacao', 'local', 'ocasio'].forEach(id => {
+      document.getElementById(id).addEventListener('input', dispararAutoSaveSermao);
+    });
+
+    async function carregarSermaoNoEditor(id) {
+      SERMAO_ATUAL_ID = id;
+      document.getElementById('lista-blocos').innerHTML = '';
+      Object.keys(editoresQuill).forEach(k => delete editoresQuill[k]);
+
+      const sermao = await db.sermoes.get(id);
+      if (sermao) {
+        document.getElementById('titulo').value = sermao.titulo || '';
+        document.getElementById('passagem').value = sermao.passagem || '';
+        document.getElementById('dataPregacao').value = sermao.dataPregacao || '';
+        document.getElementById('horarioPregacao').value = sermao.horarioPregacao || '';
+        document.getElementById('local').value = sermao.local || '';
+        document.getElementById('ocasio').value = sermao.ocasio || '';
+
+        if (sermao.blocos && sermao.blocos.length > 0) {
+          sermao.blocos.forEach(b => criarElementoBloco(b.id, b.tituloBloco, b.conteudoHtml));
+        } else {
+          ESTRUTURA_PADRAO.forEach(item => adicionarNovoBloco(item));
+        }
+      }
+      trocarAba('editor');
+    }
+
+    async function criarNovoSermaoVazio() {
+      const novoId = 'sermao_' + Date.now();
+      SERMAO_ATUAL_ID = novoId;
+      document.getElementById('titulo').value = '';
+      document.getElementById('passagem').value = '';
+      document.getElementById('dataPregacao').value = '';
+      document.getElementById('horarioPregacao').value = '';
+      document.getElementById('local').value = '';
+      document.getElementById('ocasio').value = '';
+      document.getElementById('lista-blocos').innerHTML = '';
+      Object.keys(editoresQuill).forEach(k => delete editoresQuill[k]);
+
+      ESTRUTURA_PADRAO.forEach(item => criarElementoBloco('bloco_' + Date.now() + Math.random(), item));
+      await salvarSermaoLocalmente();
+      trocarAba('editor');
+    }
+
+    async function carregarListaSermoes() {
+      const container = document.getElementById('container-lista-sermoes');
+      container.innerHTML = '';
+      const sermoes = await db.sermoes.toArray();
+
+      if (sermoes.length === 0) {
+        container.innerHTML = '<p style="color:#666;">Nenhum sermão encontrado.</p>';
+        return;
+      }
+
+      sermoes.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'sermao-item-card';
+        item.innerHTML = `
+          <div class="sermao-item-info">
+            <h3>${s.titulo || 'Sem Título'}</h3>
+            <div class="sermao-item-detalhes">
+              <span>📖 ${s.passagem || 'N/A'}</span>
+              <span>📅 ${formatarDataEHoraBR(s.dataPregacao, s.horarioPregacao)}</span>
+              <span>📍 ${s.local || 'Sem local'}</span>
+            </div>
+          </div>
+          <div class="sermao-item-acoes">
+            <button class="btn-info" onclick="visualizarSermaoCompleto('${s.id}')">👁️ Visualizar</button>
+            <button class="btn-primario" onclick="carregarSermaoNoEditor('${s.id}')">✏️ Editar</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // --- MÓDULO CONSTRUTOR DE ESTUDOS BÍBLICOS ---
+    let tempoEsperaEstudo;
+    async function salvarEstudoLocalmente() {
+      if (!ESTUDO_ATUAL_ID) return;
+
+      const estudoObjeto = {
+        id: ESTUDO_ATUAL_ID,
+        atualizadoEm: new Date().toISOString()
+      };
+
+      CAMPOS_ESTUDO.forEach(campo => {
+        const el = document.getElementById(`est-${campo}`);
+        if (el) estudoObjeto[campo] = el.value;
+      });
+
+      await db.estudos.put(estudoObjeto);
+      document.getElementById('status-salvamento').innerText = `Estudo salvo às ${new Date().toLocaleTimeString()}`;
+    }
+
+    function dispararAutoSaveEstudo() {
+      document.getElementById('status-salvamento').innerText = "Salvando estudo...";
+      clearTimeout(tempoEsperaEstudo);
+      tempoEsperaEstudo = setTimeout(salvarEstudoLocalmente, 800);
+    }
+
+    CAMPOS_ESTUDO.forEach(campo => {
+      const el = document.getElementById(`est-${campo}`);
+      if (el) el.addEventListener('input', dispararAutoSaveEstudo);
+    });
+
+    async function carregarEstudoNoEditor(id) {
+      ESTUDO_ATUAL_ID = id;
+      const estudo = await db.estudos.get(id);
+
+      if (estudo) {
+        CAMPOS_ESTUDO.forEach(campo => {
+          const el = document.getElementById(`est-${campo}`);
+          if (el) el.value = estudo[campo] || '';
+        });
+      }
+      trocarAba('estudo-editor');
+    }
+
+    async function criarNovoEstudoVazio() {
+      const novoId = 'estudo_' + Date.now();
+      ESTUDO_ATUAL_ID = novoId;
+
+      CAMPOS_ESTUDO.forEach(campo => {
+        const el = document.getElementById(`est-${campo}`);
+        if (el) el.value = '';
+      });
+
+      await salvarEstudoLocalmente();
+      trocarAba('estudo-editor');
+    }
+
+    async function carregarListaEstudos() {
+      const container = document.getElementById('container-lista-estudos');
+      container.innerHTML = '';
+      const estudos = await db.estudos.toArray();
+
+      if (estudos.length === 0) {
+        container.innerHTML = '<p style="color:#666;">Nenhum estudo bíblico encontrado. Comece criando um novo!</p>';
+        return;
+      }
+
+      estudos.forEach(e => {
+        const item = document.createElement('div');
+        item.className = 'estudo-item-card';
+        item.innerHTML = `
+          <div class="estudo-item-info">
+            <h3>📖 ${e.texto || 'Passagem sem nome'}</h3>
+            <div class="estudo-item-detalhes">
+              <span><strong>Gênero:</strong> ${e.genero || 'N/A'}</span>
+              <span><strong>Tema:</strong> ${e.tema || 'Sem tema'}</span>
+              <span><strong>ICT:</strong> ${e.ict || 'Sem ICT'}</span>
+            </div>
+          </div>
+          <div class="estudo-item-acoes">
+            <button class="btn-info" onclick="visualizarEstudoCompleto('${e.id}')">👁️ Visualizar</button>
+            <button class="btn-estudo" onclick="carregarEstudoNoEditor('${e.id}')">✏️ Editar</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // --- MODAIS E VISUALIZAÇÃO ---
+    async function visualizarSermaoCompleto(id) {
+      const sermao = await db.sermoes.get(id);
+      if (!sermao) return;
+
+      document.getElementById('modal-titulo').innerText = sermao.titulo || 'Sem Título';
+      
+      let html = `
+        <div class="modal-info-grid">
+          <div class="modal-info-item">📖 <strong>Passagem:</strong> ${sermao.passagem || 'N/A'}</div>
+          <div class="modal-info-item">📅 <strong>Data:</strong> ${formatarDataEHoraBR(sermao.dataPregacao, sermao.horarioPregacao)}</div>
+          <div class="modal-info-item">📍 <strong>Local:</strong> ${sermao.local || 'N/A'}</div>
+        </div>
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+      `;
+
+      if (sermao.blocos && sermao.blocos.length > 0) {
+        sermao.blocos.forEach(b => {
+          html += `
+            <div class="bloco-visualizacao">
+              <div class="bloco-visualizacao-titulo">${b.tituloBloco}</div>
+              <div class="bloco-visualizacao-conteudo">${b.conteudoHtml || '<em>Sem conteúdo</em>'}</div>
+            </div>
+          `;
+        });
+      }
+
+      document.getElementById('modal-corpo').innerHTML = html;
+      document.getElementById('modal-visualizar').style.display = 'flex';
+    }
+
+    async function visualizarEstudoCompleto(id) {
+      const e = await db.estudos.get(id);
+      if (!e) return;
+
+      document.getElementById('modal-titulo').innerText = `Estudo: ${e.texto || 'Sem texto'}`;
+
+      const labels = {
+        genero: 'Gênero Literário',
+        diagramacao: 'Diagramação',
+        palavrasChave: 'Palavras-chave',
+        termosRelacionados: 'Termos Relacionados',
+        passagensRelacionadas: 'Passagens Relacionadas',
+        doutrinasRelacionadas: 'Doutrinas Relacionadas',
+        resumo: 'Resumo da Passagem',
+        insightsDuvidas: 'Insights e Dúvidas',
+        fcd: 'Foco da Condição Decaída (FCD)',
+        relevancia: 'Relevância da Passagem',
+        ict: 'Ideia Central do Texto (ICT)',
+        tese: 'Tese',
+        propositoBasico: 'Propósito Básico',
+        propositosEspecificos: 'Propósitos Específicos',
+        tema: 'Tema'
+      };
+
+      let html = '';
+      CAMPOS_ESTUDO.forEach(campo => {
+        if (campo === 'texto') return;
+        const valor = e[campo];
+        if (valor) {
+          html += `
+            <div class="bloco-visualizacao">
+              <div class="bloco-visualizacao-titulo">${labels[campo]}</div>
+              <div class="bloco-visualizacao-conteudo">${valor}</div>
+            </div>
+          `;
+        }
+      });
+
+      document.getElementById('modal-corpo').innerHTML = html || '<p>Estudo sem conteúdo preenchido.</p>';
+      document.getElementById('modal-visualizar').style.display = 'flex';
+    }
+
+    function fecharModal() {
+      document.getElementById('modal-visualizar').style.display = 'none';
+    }
+
+    // --- AGENDA & PROGRAMAÇÃO RÁPIDA ---
+    async function salvarProgramacaoRapida(e) {
+      e.preventDefault();
+      const novoId = 'sermao_' + Date.now();
+      const titulo = document.getElementById('prog-titulo').value;
+      const dataPregacao = document.getElementById('prog-data').value;
+      const horarioPregacao = document.getElementById('prog-horario').value;
+      const local = document.getElementById('prog-local').value;
+      const ocasio = document.getElementById('prog-ocasio').value;
+      const passagem = document.getElementById('prog-passagem').value;
+
+      const blocosIniciais = ESTRUTURA_PADRAO.map(b => ({
+        id: 'bloco_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        tituloBloco: b,
+        conteudoHtml: ''
+      }));
+
+      await db.sermoes.put({
+        id: novoId,
+        titulo, dataPregacao, horarioPregacao, local, ocasio, passagem,
+        blocos: blocosIniciais,
+        atualizadoEm: new Date().toISOString()
+      });
+
+      document.getElementById('form-programar').reset();
+      carregarCalendario();
+      alert('Pregação agendada com sucesso!');
+    }
+
+    async function carregarCalendario() {
+      const sermoes = await db.sermoes.toArray();
+      const eventos = sermoes
+        .filter(s => s.dataPregacao)
+        .map(s => ({
+          id: s.id,
+          title: `${s.titulo || 'Sem Título'}${s.horarioPregacao ? ` [${s.horarioPregacao}]` : ''}`,
+          start: s.horarioPregacao ? `${s.dataPregacao}T${s.horarioPregacao}` : s.dataPregacao,
+          color: '#2c3e50'
+        }));
+
+      const calendarEl = document.getElementById('calendar');
+      if (calendarInstance) calendarInstance.destroy();
+
+      calendarInstance = new FullCalendar.Calendar(calendarEl, {
+        locale: 'pt-br',
+        initialView: 'dayGridMonth',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+        events: eventos,
+        eventClick: (info) => visualizarSermaoCompleto(info.event.id)
+      });
+      calendarInstance.render();
+    }
+
+    // --- EXPORTAÇÃO PDF ---
+    function exportarParaPDF() {
+      const titulo = document.getElementById('titulo').value || 'Sem Título';
+      const passagem = document.getElementById('passagem').value || 'N/A';
+      const data = formatarDataEHoraBR(
+        document.getElementById('dataPregacao').value,
+        document.getElementById('horarioPregacao').value
+      );
+      const local = document.getElementById('local').value || 'N/A';
+      const ocasio = document.getElementById('ocasio').value || 'N/A';
+
+      let pdfHtml = `
+        <div class="pdf-header">
+          <h1 class="pdf-titulo">${titulo}</h1>
+          <div class="pdf-meta-box">
+            <strong>Passagem:</strong> ${passagem} | <strong>Data/Hora:</strong> ${data} | 
+            <strong>Local:</strong> ${local} | <strong>Ocasião:</strong> ${ocasio}
+          </div>
+        </div>
+      `;
+
+      document.querySelectorAll('.bloco-card').forEach(card => {
+        const idBloco = card.id.replace('card-', '');
+        const tituloBloco = card.querySelector('.titulo-bloco').value;
+        const conteudoHtml = editoresQuill[idBloco] ? editoresQuill[idBloco].root.innerHTML : '';
+
+        pdfHtml += `
+          <div class="pdf-bloco">
+            <div class="pdf-bloco-titulo">${tituloBloco}</div>
+            <div class="pdf-bloco-conteudo">${conteudoHtml}</div>
+          </div>
+        `;
+      });
+
+      const element = document.getElementById('pdf-template');
+      element.innerHTML = pdfHtml;
+      element.style.display = 'block';
+
+      const opt = {
+        margin: [15, 15, 15, 15],
+        filename: `${titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_sermao.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        element.style.display = 'none';
+      });
+    }
+
+    // Inicialização da Aplicação
+    async function init() {
+      const sermoes = await db.sermoes.toArray();
+      if (sermoes.length > 0) {
+        carregarSermaoNoEditor(sermoes[0].id);
+      } else {
+        criarNovoSermaoVazio();
+      }
+
+      const estudos = await db.estudos.toArray();
+      if (estudos.length > 0) {
+        ESTUDO_ATUAL_ID = estudos[0].id;
+      } else {
+        criarNovoEstudoVazio();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

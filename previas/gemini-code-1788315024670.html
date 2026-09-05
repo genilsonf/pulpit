@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor de Sermões</title>
+  
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 15px;
+      background-color: #f9f9f9;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    #editor {
+      height: 350px;
+      background: white;
+    }
+    .status {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Novo Sermão</h2>
+    
+    <input type="text" id="titulo" placeholder="Título do Sermão (ex: A Parábola do Semeador)...">
+    <input type="text" id="passagem" placeholder="Passagem Chave (ex: Mateus 13:1-23)...">
+    
+    <div id="editor"></div>
+    
+    <p class="status" id="status-salvamento">Status: Aguardando alterações...</p>
+  </div>
+
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+  <script>
+    // 1. Inicializar Banco de Dados Local (Dexie.js)
+    const db = new Dexie("SermoesDB");
+    db.version(1).stores({
+      sermoes: "id, titulo, passagem, atualizadoEm"
+    });
+
+    // ID fixo para teste do sermão atual
+    const SERMAO_ID = "sermao-demo-1";
+
+    // 2. Inicializar Editor de Texto (Quill.js)
+    const quill = new Quill('#editor', {
+      theme: 'snow',
+      placeholder: 'Escreva o esboço do seu sermão aqui...',
+      modules: {
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['blockquote', 'link'],
+          ['clean']
+        ]
+      }
+    });
+
+    // 3. Função para Salvar Automaticamente no Navegador
+    let tempoEspera;
+    async function salvarLocalmente() {
+      const titulo = document.getElementById('titulo').value;
+      const passagem = document.getElementById('passagem').value;
+      const conteudoHtml = quill.root.innerHTML;
+
+      await db.sermoes.put({
+        id: SERMAO_ID,
+        titulo: titulo,
+        passagem: passagem,
+        conteudoHtml: conteudoHtml,
+        atualizadoEm: new Date().toISOString(),
+        sincronizado: false
+      });
+
+      document.getElementById('status-salvamento').innerText = 
+        `Status: Salvo localmente às ${new Date().toLocaleTimeString()}`;
+    }
+
+    // Eventos para disparar auto-save quando o usuário digita
+    function dispararAutoSave() {
+      document.getElementById('status-salvamento').innerText = "Status: Salvando...";
+      clearTimeout(tempoEspera);
+      // Salva 1 segundo após o usuário parar de digitar
+      tempoEspera = setTimeout(salvarLocalmente, 1000); 
+    }
+
+    quill.on('text-change', dispararAutoSave);
+    document.getElementById('titulo').addEventListener('input', dispararAutoSave);
+    document.getElementById('passagem').addEventListener('input', dispararAutoSave);
+
+    // 4. Carregar dados salvos ao abrir a página
+    async function carregarSermaoSalvo() {
+      const sermao = await db.sermoes.get(SERMAO_ID);
+      if (sermao) {
+        document.getElementById('titulo').value = sermao.titulo || '';
+        document.getElementById('passagem').value = sermao.passagem || '';
+        if (sermao.conteudoHtml) {
+          quill.root.innerHTML = sermao.conteudoHtml;
+        }
+        document.getElementById('status-salvamento').innerText = "Status: Conteúdo carregado do banco local.";
+      }
+    }
+
+    // Executa ao abrir
+    carregarSermaoSalvo();
+  </script>
+</body>
+</html>

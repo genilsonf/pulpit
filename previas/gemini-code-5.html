@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor e Agenda de Sermões</title>
+  
+  <!-- CSS Quill.js -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <!-- CSS FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --border-color: #e0e0e0;
+      --accent-color: #27ae60;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      margin: 0;
+      padding: 0 0 100px 0;
+      color: #333;
+    }
+
+    /* Navegação por Abas */
+    .nav-bar {
+      background: var(--primary-color);
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 10px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .nav-tab {
+      color: #ecf0f1;
+      background: transparent;
+      border: none;
+      font-size: 1.1rem;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .nav-tab.active {
+      background: rgba(255,255,255,0.2);
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .aba-conteudo {
+      display: none;
+    }
+
+    .aba-conteudo.active {
+      display: block;
+    }
+
+    /* Cabeçalho de Metadados */
+    .header-inputs {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .input-row:last-child {
+      margin-bottom: 0;
+    }
+
+    input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    input[type="text"]:focus, input[type="date"]:focus {
+      border-color: var(--primary-color);
+    }
+
+    .titulo-principal {
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    /* Blocos */
+    .bloco-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      border-left: 5px solid var(--primary-color);
+    }
+
+    .bloco-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .bloco-header input {
+      font-weight: bold;
+      border: none;
+      border-bottom: 1px dashed #ccc;
+      border-radius: 0;
+      padding: 4px;
+      margin: 0;
+      width: 60%;
+      font-size: 1.05rem;
+    }
+
+    .controles-bloco {
+      display: flex;
+      gap: 5px;
+    }
+
+    .btn-acao {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .btn-remover {
+      background: #e74c3c;
+      color: white;
+      border: none;
+    }
+
+    .editor-container {
+      min-height: 140px;
+    }
+
+    .ql-container.ql-snow {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
+
+    /* Botões */
+    .acoes-container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 25px 0;
+    }
+
+    .btn-adicionar {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-pdf {
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* Toolbar Flutuante */
+    #barra-flutuante {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      border-radius: 30px;
+      padding: 6px 15px;
+      z-index: 1000;
+      border: 1px solid var(--border-color);
+    }
+
+    .ql-toolbar.ql-snow {
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .status-bar {
+      position: fixed;
+      top: 0;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 4px 12px;
+      border-bottom-left-radius: 6px;
+      border-bottom-right-radius: 6px;
+      font-size: 0.8rem;
+      z-index: 1001;
+    }
+
+    /* Estilo do Calendário */
+    #calendario-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Template PDF */
+    #pdf-template {
+      display: none;
+      font-family: 'Georgia', serif;
+      color: #2c3e50;
+      padding: 20px;
+    }
+
+    .pdf-header {
+      border-bottom: 2px solid #2c3e50;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .pdf-titulo {
+      font-size: 20pt;
+      font-weight: bold;
+      margin: 0 0 10px 0;
+    }
+
+    .pdf-meta-box {
+      background: #f0ebe1;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: sans-serif;
+      font-size: 9.5pt;
+      margin-top: 10px;
+    }
+
+    .pdf-bloco {
+      margin-bottom: 18px;
+      page-break-inside: avoid;
+    }
+
+    .pdf-bloco-titulo {
+      font-family: sans-serif;
+      font-size: 12pt;
+      font-weight: bold;
+      border-left: 4px solid #2c3e50;
+      padding-left: 8px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .pdf-bloco-conteudo {
+      font-size: 10.5pt;
+      line-height: 1.5;
+      text-align: justify;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="status-bar" id="status-salvamento">Carregando...</div>
+
+  <!-- Barra de Navegação -->
+  <div class="nav-bar">
+    <button class="nav-tab active" onclick="trocarAba('editor')">📝 Editor de Sermão</button>
+    <button class="nav-tab" onclick="trocarAba('agenda')">📅 Agenda de Pregações</button>
+  </div>
+
+  <div class="container">
+    
+    <!-- ABA 1: EDITOR DE SERMÕES -->
+    <div id="aba-editor" class="aba-conteudo active">
+      <div class="header-inputs">
+        <div class="input-row">
+          <input type="text" id="titulo" class="titulo-principal" placeholder="Título do Sermão...">
+          <input type="text" id="passagem" placeholder="Passagem Chave (ex: João 3:16)...">
+        </div>
+        <div class="input-row">
+          <input type="date" id="dataPregacao" title="Data da Pregação">
+          <input type="text" id="local" placeholder="Local (ex: Igreja Central)...">
+          <input type="text" id="ocasio" placeholder="Ocasião (ex: Culto da Família)...">
+        </div>
+      </div>
+
+      <div id="lista-blocos"></div>
+
+      <div class="acoes-container">
+        <button class="btn-adicionar" onclick="adicionarNovoBloco()">+ Adicionar Bloco</button>
+        <button class="btn-pdf" onclick="exportarParaPDF()">📄 Exportar para PDF</button>
+      </div>
+    </div>
+
+    <!-- ABA 2: CALENDÁRIO / AGENDA -->
+    <div id="aba-agenda" class="aba-conteudo">
+      <div id="calendario-card">
+        <div id="calendar"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toolbar Flutuante do Editor -->
+  <div id="barra-flutuante" class="ql-toolbar ql-snow">
+    <span class="ql-formats">
+      <select class="ql-header">
+        <option value="1">Título 1</option>
+        <option value="2">Título 2</option>
+        <option selected>Normal</option>
+      </select>
+    </span>
+    <span class="ql-formats">
+      <button class="ql-bold"></button>
+      <button class="ql-italic"></button>
+      <button class="ql-underline"></button>
+    </span>
+    <span class="ql-formats">
+      <button class="ql-list" value="ordered"></button>
+      <button class="ql-list" value="bullet"></button>
+    </span>
+    <span class="ql-formats">
+      <button class="ql-blockquote"></button>
+      <button class="ql-clean"></button>
+    </span>
+  </div>
+
+  <div id="pdf-template"></div>
+
+  <!-- Scripts das Bibliotecas -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
+
+  <script>
+    // 1. Banco de Dados Dexie.js
+    const db = new Dexie("SermoesDB");
+    db.version(4).stores({
+      sermoes: "id, titulo, passagem, dataPregacao, local, ocasio, atualizadoEm"
+    });
+
+    let SERMAO_ATUAL_ID = "sermao-demo-1";
+    const editoresQuill = {};
+    let calendarInstance = null;
+
+    const ESTRUTURA_PADRAO = [
+      "Introdução",
+      "Elucidação",
+      "Pontos",
+      "Aplicações",
+      "Conclusão"
+    ];
+
+    // 2. Troca de Abas (Editor vs Agenda)
+    function trocarAba(nomeAba) {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.aba-conteudo').forEach(a => a.classList.remove('active'));
+
+      if (nomeAba === 'editor') {
+        document.querySelectorAll('.nav-tab')[0].classList.add('active');
+        document.getElementById('aba-editor').classList.add('active');
+        document.getElementById('barra-flutuante').style.display = 'flex';
+      } else {
+        document.querySelectorAll('.nav-tab')[1].classList.add('active');
+        document.getElementById('aba-agenda').classList.add('active');
+        document.getElementById('barra-flutuante').style.display = 'none';
+        carregarCalendario();
+      }
+    }
+
+    // 3. Criação dos Blocos de Editor
+    function criarElementoBloco(idBloco, tituloBloco = '', conteudoHtml = '') {
+      const container = document.getElementById('lista-blocos');
+      
+      const divBloco = document.createElement('div');
+      divBloco.className = 'bloco-card';
+      divBloco.id = `card-${idBloco}`;
+      
+      divBloco.innerHTML = `
+        <div class="bloco-header">
+          <input type="text" class="titulo-bloco" value="${tituloBloco}" placeholder="Nome do Bloco...">
+          <div class="controles-bloco">
+            <button class="btn-acao" onclick="moverBloco('${idBloco}', -1)" title="Mover para cima">▲</button>
+            <button class="btn-acao" onclick="moverBloco('${idBloco}', 1)" title="Mover para baixo">▼</button>
+            <button class="btn-acao btn-remover" onclick="removerBloco('${idBloco}')" title="Remover Bloco">✕</button>
+          </div>
+        </div>
+        <div id="editor-${idBloco}" class="editor-container"></div>
+      `;
+
+      container.appendChild(divBloco);
+
+      const quill = new Quill(`#editor-${idBloco}`, {
+        theme: 'snow',
+        placeholder: `Escreva sobre: ${tituloBloco}...`,
+        modules: { toolbar: '#barra-flutuante' }
+      });
+
+      if (conteudoHtml) {
+        quill.root.innerHTML = conteudoHtml;
+      }
+
+      quill.on('text-change', dispararAutoSave);
+      divBloco.querySelector('.titulo-bloco').addEventListener('input', dispararAutoSave);
+
+      editoresQuill[idBloco] = quill;
+    }
+
+    function moverBloco(idBloco, direcao) {
+      const card = document.getElementById(`card-${idBloco}`);
+      if (!card) return;
+
+      if (direcao === -1 && card.previousElementSibling) {
+        card.parentNode.insertBefore(card, card.previousElementSibling);
+        dispararAutoSave();
+      } else if (direcao === 1 && card.nextElementSibling) {
+        card.parentNode.insertBefore(card.nextElementSibling, card);
+        dispararAutoSave();
+      }
+    }
+
+    function adicionarNovoBloco(titulo = 'Novo Ponto', conteudo = '') {
+      const idBloco = 'bloco_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+      criarElementoBloco(idBloco, titulo, conteudo);
+      dispararAutoSave();
+    }
+
+    function removerBloco(idBloco) {
+      if (document.querySelectorAll('.bloco-card').length <= 1) {
+        alert("O sermão deve ter pelo menos um bloco.");
+        return;
+      }
+      
+      const card = document.getElementById(`card-${idBloco}`);
+      if (card) {
+        card.remove();
+        delete editoresQuill[idBloco];
+        dispararAutoSave();
+      }
+    }
+
+    // 4. Salvamento Automático
+    let tempoEspera;
+    async function salvarLocalmente() {
+      const titulo = document.getElementById('titulo').value;
+      const passagem = document.getElementById('passagem').value;
+      const dataPregacao = document.getElementById('dataPregacao').value;
+      const local = document.getElementById('local').value;
+      const ocasio = document.getElementById('ocasio').value;
+      
+      const blocosData = [];
+      const cards = document.querySelectorAll('.bloco-card');
+
+      cards.forEach(card => {
+        const idBloco = card.id.replace('card-', '');
+        const tituloBloco = card.querySelector('.titulo-bloco').value;
+        const conteudoHtml = editoresQuill[idBloco] ? editoresQuill[idBloco].root.innerHTML : '';
+
+        blocosData.push({
+          id: idBloco,
+          tituloBloco: tituloBloco,
+          conteudoHtml: conteudoHtml
+        });
+      });
+
+      await db.sermoes.put({
+        id: SERMAO_ATUAL_ID,
+        titulo: titulo,
+        passagem: passagem,
+        dataPregacao: dataPregacao,
+        local: local,
+        ocasio: ocasio,
+        blocos: blocosData,
+        atualizadoEm: new Date().toISOString(),
+        sincronizado: false
+      });
+
+      document.getElementById('status-salvamento').innerText = 
+        `Salvo às ${new Date().toLocaleTimeString()}`;
+    }
+
+    function dispararAutoSave() {
+      document.getElementById('status-salvamento').innerText = "Salvando...";
+      clearTimeout(tempoEspera);
+      tempoEspera = setTimeout(salvarLocalmente, 800);
+    }
+
+    ['titulo', 'passagem', 'dataPregacao', 'local', 'ocasio'].forEach(id => {
+      document.getElementById(id).addEventListener('input', dispararAutoSave);
+    });
+
+    // 5. Carregar Sermão Salvo
+    async function carregarSermaoSalvo(id = SERMAO_ATUAL_ID) {
+      SERMAO_ATUAL_ID = id;
+      
+      // Limpa editores atuais
+      document.getElementById('lista-blocos').innerHTML = '';
+      Object.keys(editoresQuill).forEach(k => delete editoresQuill[k]);
+
+      const sermao = await db.sermoes.get(id);
+      
+      if (sermao) {
+        document.getElementById('titulo').value = sermao.titulo || '';
+        document.getElementById('passagem').value = sermao.passagem || '';
+        document.getElementById('dataPregacao').value = sermao.dataPregacao || '';
+        document.getElementById('local').value = sermao.local || '';
+        document.getElementById('ocasio').value = sermao.ocasio || '';
+
+        if (sermao.blocos && sermao.blocos.length > 0) {
+          sermao.blocos.forEach(b => {
+            criarElementoBloco(b.id, b.tituloBloco, b.conteudoHtml);
+          });
+        } else {
+          gerarEstruturaPadrao();
+        }
+      } else {
+        gerarEstruturaPadrao();
+      }
+      
+      document.getElementById('status-salvamento').innerText = "Carregado do banco local";
+    }
+
+    function gerarEstruturaPadrao() {
+      ESTRUTURA_PADRAO.forEach(item => {
+        adicionarNovoBloco(item);
+      });
+    }
+
+    // 6. Configuração da Agenda / Calendário
+    async function carregarCalendario() {
+      const sermoes = await db.sermoes.toArray();
+      
+      // Mapeia os sermões salvos que possuem data para o formato do FullCalendar
+      const eventos = sermoes
+        .filter(s => s.dataPregacao)
+        .map(s => ({
+          id: s.id,
+          title: `${s.titulo || 'Sem Título'} (${s.local || 'Local N/A'})`,
+          start: s.dataPregacao,
+          color: '#2c3e50'
+        }));
+
+      const calendarEl = document.getElementById('calendar');
+
+      if (calendarInstance) {
+        calendarInstance.destroy();
+      }
+
+      calendarInstance = new FullCalendar.Calendar(calendarEl, {
+        locale: 'pt-br',
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek'
+        },
+        events: eventos,
+        eventClick: function(info) {
+          // Ao clicar em um sermão no calendário, abre no editor
+          carregarSermaoSalvo(info.event.id);
+          trocarAba('editor');
+        }
+      });
+
+      calendarInstance.render();
+    }
+
+    // 7. Exportar PDF
+    function exportarParaPDF() {
+      const titulo = document.getElementById('titulo').value || 'Sem Título';
+      const passagem = document.getElementById('passagem').value || 'N/A';
+      const data = document.getElementById('dataPregacao').value || 'N/A';
+      const local = document.getElementById('local').value || 'N/A';
+      const ocasio = document.getElementById('ocasio').value || 'N/A';
+
+      let pdfHtml = `
+        <div class="pdf-header">
+          <h1 class="pdf-titulo">${titulo}</h1>
+          <div class="pdf-meta-box">
+            <strong>Passagem:</strong> ${passagem} | 
+            <strong>Data:</strong> ${data} | 
+            <strong>Local:</strong> ${local} | 
+            <strong>Ocasião:</strong> ${ocasio}
+          </div>
+        </div>
+      `;
+
+      const cards = document.querySelectorAll('.bloco-card');
+      cards.forEach(card => {
+        const idBloco = card.id.replace('card-', '');
+        const tituloBloco = card.querySelector('.titulo-bloco').value;
+        const conteudoHtml = editoresQuill[idBloco] ? editoresQuill[idBloco].root.innerHTML : '';
+
+        pdfHtml += `
+          <div class="pdf-bloco">
+            <div class="pdf-bloco-titulo">${tituloBloco}</div>
+            <div class="pdf-bloco-conteudo">${conteudoHtml}</div>
+          </div>
+        `;
+      });
+
+      const element = document.getElementById('pdf-template');
+      element.innerHTML = pdfHtml;
+      element.style.display = 'block';
+
+      const opt = {
+        margin:       [15, 15, 15, 15],
+        filename:     `${titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_sermao.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        element.style.display = 'none';
+      });
+    }
+
+    // Inicialização
+    carregarSermaoSalvo();
+  </script>
+</body>
+</html>

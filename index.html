@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de Sermões, Estudos e Devocionais</title>
+  
+  <!-- CSS Quill.js e FullCalendar -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="status-bar" id="status-salvamento">Pronto</div>
+
+  <!-- Barra de Navegação -->
+  <div class="nav-bar">
+    <button class="nav-tab" data-aba="biblia">📖 Bíblia</button>
+    <button class="nav-tab active" data-aba="editor">📝 Construtor de Sermão</button>
+    <button class="nav-tab" data-aba="lista">📚 Sermões</button>
+    <button class="nav-tab" data-aba="estudo-editor">✏️ Construtor de Estudos</button>
+    <button class="nav-tab" data-aba="estudo-lista">📖 Estudos Realizados</button>
+    <button class="nav-tab" data-aba="devocional-editor">🙏 Construtor Devocional</button>
+    <button class="nav-tab" data-aba="devocional-lista">📓 Devocionais</button>
+    <button class="nav-tab" data-aba="agenda">📅 Agenda</button>
+  </div>
+
+  <div class="container">
+    
+    <!-- ABA 1: CONSTRUTOR DE SERMÃO -->
+    <div id="aba-editor" class="aba-conteudo active">
+      <div class="header-inputs">
+        <div class="input-row">
+          <input type="text" id="titulo" class="titulo-principal" placeholder="Título do Sermão...">
+          <input type="text" id="passagem" class="input-biblico" placeholder="Clique para selecionar a passagem..." readonly>
+        </div>
+        <div class="input-row">
+          <input type="date" id="dataPregacao" title="Data da Pregação">
+          <input type="time" id="horarioPregacao" title="Horário do Culto">
+          <input type="text" id="local" placeholder="Local (ex: Igreja Central)...">
+          <input type="text" id="ocasio" placeholder="Ocasião (ex: Culto da Família)...">
+        </div>
+      </div>
+
+      <!-- Dentro do Construtor de Sermões (Aba Editor) -->
+      <div id="lista-blocos"></div>
+
+      <div class="acoes-container">
+        <button id="btn-add-bloco" class="btn-primario">+ Adicionar Bloco</button>
+        <button id="btn-export-pdf" class="btn-sucesso">📄 Exportar para PDF</button>
+      </div>
+    </div>
+
+    <!-- ABA 2: SERMÕES CONSTRUÍDOS -->
+    <div id="aba-lista" class="aba-conteudo">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2>Biblioteca de Sermões</h2>
+        <button id="btn-novo-sermao-vazio" class="btn-primario">+ Novo Sermão</button>
+      </div>
+      <div id="container-lista-sermoes" class="lista-sermoes"></div>
+    </div>
+
+    <!-- ABA 3: CONSTRUTOR DE ESTUDOS BÍBLICOS -->
+    <div id="aba-estudo-editor" class="aba-conteudo">
+      <div class="estudo-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h2 style="margin: 0; color: var(--estudo-color);">Estudo Indutivo de Passagem</h2>
+          <button id="btn-gerar-sermao-estudo" class="btn-sucesso">🚀 Gerar Sermão deste Estudo</button>
+        </div>
+        
+        <div class="input-row">
+          <div class="input-group" style="flex: 2;">
+            <label>Texto (Passagem Bíblica):</label>
+            <input type="text" id="est-texto" class="input-biblico" placeholder="Clique para selecionar a passagem..." readonly>
+          </div>
+          <div class="input-group" style="flex: 1;">
+            <label>Gênero Literário:</label>
+            <select id="est-genero">
+              <option value="">Selecione...</option>
+              <option value="Narrativo">Narrativo</option>
+              <option value="Evangelho">Evangelho</option>
+              <option value="Epistolar">Epistolar</option>
+              <option value="Poético">Poético</option>
+              <option value="Sabedoria">Sabedoria</option>
+              <option value="Profético">Profético</option>
+              <option value="Apocalíptico">Apocalíptico</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Diagramação / Estrutura da Passagem:</label>
+          <textarea id="est-diagramacao" placeholder="Esboço visual ou divisão dos versículos..."></textarea>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>Palavras-chave:</label>
+            <textarea id="est-palavrasChave" placeholder="Termos repetidos ou centrais..."></textarea>
+          </div>
+          <div class="input-group">
+            <label>Termos relacionados:</label>
+            <textarea id="est-termosRelacionados" placeholder="Significados no original, conexões..."></textarea>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>Passagens relacionadas (Referências Cruzadas):</label>
+            <textarea id="est-passagensRelacionadas" placeholder="Outros textos que explicam este..."></textarea>
+          </div>
+          <div class="input-group">
+            <label>Doutrinas relacionadas:</label>
+            <textarea id="est-doutrinasRelacionadas" placeholder="Ex: Soteriologia, Graça, Depravação..."></textarea>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Resumo da passagem:</label>
+          <textarea id="est-resumo" placeholder="Resumo em poucas frases do que o texto diz..."></textarea>
+        </div>
+
+        <div class="input-group">
+          <label>Insights e dúvidas:</label>
+          <textarea id="est-insightsDuvidas" placeholder="Anotações pessoais, perguntas para pesquisar..."></textarea>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>Foco da Condição Decaída (FCD):</label>
+            <textarea id="est-fcd" placeholder="Qual o problema humano/pecado abordado no texto?"></textarea>
+          </div>
+          <div class="input-group">
+            <label>Relevância da passagem:</label>
+            <textarea id="est-relevancia" placeholder="Por que este texto é importante hoje?"></textarea>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>ICT (Ideia Central do Texto):</label>
+            <input type="text" id="est-ict" placeholder="O que o autor bíblico quis dizer ao leitor original?">
+          </div>
+          <div class="input-group">
+            <label>Tese / Tema Principal:</label>
+            <input type="text" id="est-tese" placeholder="Declaração central do estudo...">
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label>Propósito Básico:</label>
+            <select id="est-propositoBasico">
+              <option value="">Selecione o propósito...</option>
+              <option value="Evangelístico">Evangelístico</option>
+              <option value="Devocional">Devocional</option>
+              <option value="Missionário">Missionário</option>
+              <option value="Pastoral">Pastoral</option>
+              <option value="Ético">Ético</option>
+              <option value="Doutrinário">Doutrinário</option>
+            </select>
+            <div id="desc-proposito-basico" class="proposito-info-box">
+              Selecione uma opção acima para visualizar o significado.
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Propósitos Específicos:</label>
+            <textarea id="est-propositosEspecificos" placeholder="Ações práticas que os ouvintes devem tomar..."></textarea>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Tema da Mensagem:</label>
+          <input type="text" id="est-tema" placeholder="Título/Tema prático decorrente do estudo...">
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 4: ESTUDOS REALIZADOS -->
+    <div id="aba-estudo-lista" class="aba-conteudo">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2>Passagens Estudadas</h2>
+        <button id="btn-novo-estudo-vazio" class="btn-estudo">+ Novo Estudo</button>
+      </div>
+      <div id="container-lista-estudos" class="lista-estudos"></div>
+    </div>
+
+    <!-- ABA 5: CONSTRUTOR DEVOCIONAL -->
+    <div id="aba-devocional-editor" class="aba-conteudo">
+      <div class="devocional-card">
+        <h2 style="margin-top: 0; color: var(--devocional-color);">Registro de Devocional Diária</h2>
+        
+        <div class="input-row">
+          <div class="input-group" style="flex: 2;">
+            <label>Texto Bíblico:</label>
+            <input type="text" id="dev-texto" class="input-biblico" placeholder="Clique para selecionar a passagem..." readonly>
+          </div>
+          <div class="input-group" style="flex: 1;">
+            <label>Data:</label>
+            <input type="date" id="dev-data">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Lição do Texto:</label>
+          <textarea id="dev-licao" placeholder="O que Deus revelou no texto? O que aprendi sobre Deus ou sobre o homem?"></textarea>
+        </div>
+
+        <div class="input-group">
+          <label>Aplicação Pessoal:</label>
+          <textarea id="dev-aplicacao" placeholder="Como posso aplicar esta verdade na minha vida hoje?"></textarea>
+        </div>
+
+        <div class="input-group">
+          <label>Motivos de Oração:</label>
+          <textarea id="dev-oracao" placeholder="Pedidos, agradecimentos e intercessões gerados pela leitura..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 6: DEVOCIONAIS REALIZADAS -->
+    <div id="aba-devocional-lista" class="aba-conteudo">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2>Minhas Devocionais</h2>
+        <button id="btn-nova-devocional-vazia" class="btn-devocional">+ Nova Devocional</button>
+      </div>
+      <div id="container-lista-devocionais" class="lista-devocionais"></div>
+    </div>
+
+    <!-- ABA 7: PROGRAMAÇÃO E AGENDA -->
+    <div id="aba-agenda" class="aba-conteudo">
+      <div class="agenda-grid">
+        <div class="form-card">
+          <h3 style="margin-top:0;">Programar Pregação</h3>
+          <p style="font-size:0.85rem; color:#666; margin-bottom:15px;">Agende a data e o local antes de escrever o sermão.</p>
+          
+          <form id="form-programar">
+            <div style="margin-bottom:10px;">
+              <label style="font-size:0.85rem; font-weight:bold;">Título</label>
+              <input type="text" id="prog-titulo" placeholder="Ex: Amor de Deus" required>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+              <div style="flex: 2;">
+                <label style="font-size:0.85rem; font-weight:bold;">Data</label>
+                <input type="date" id="prog-data" required>
+              </div>
+              <div style="flex: 1;">
+                <label style="font-size:0.85rem; font-weight:bold;">Horário</label>
+                <input type="time" id="prog-horario">
+              </div>
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:0.85rem; font-weight:bold;">Local</label>
+              <input type="text" id="prog-local" placeholder="Ex: Congregação Sul">
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="font-size:0.85rem; font-weight:bold;">Ocasião</label>
+              <input type="text" id="prog-ocasio" placeholder="Ex: Culto da Família...">
+            </div>
+            <div style="margin-bottom:15px;">
+              <label style="font-size:0.85rem; font-weight:bold;">Passagem Chave</label>
+              <input type="text" id="prog-passagem" class="input-biblico" placeholder="Clique para selecionar a passagem..." readonly>
+            </div>
+            <button type="submit" class="btn-sucesso" style="width:100%;">📌 Agendar no Calendário</button>
+          </form>
+        </div>
+
+        <div id="calendario-card">
+          <div id="calendar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 8: LEITOR BÍBLICO -->
+    <div id="aba-biblia" class="aba-conteudo">
+      <div class="estudo-card">
+        <h2 style="margin-top:0; color: var(--primary-color);">Consulta Bíblica</h2>
+        
+        <div class="input-row" style="margin-bottom: 20px;">
+          <div class="input-group" style="flex: 2;">
+            <label>Passagem:</label>
+            <input type="text" id="biblia-leitor-input" class="input-biblico" placeholder="Clique para selecionar a passagem..." readonly>
+          </div>
+          <div class="input-group" style="flex: 1; align-self: flex-end;">
+            <button id="btn-carregar-texto-biblia" class="btn-primario" style="width: 100%;">Ler Passagem</button>
+          </div>
+        </div>
+
+        <!-- Área onde o texto do capítulo/versículos será exibido -->
+        <div id="conteudo-texto-biblico" style="background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; min-height: 200px; max-height: 600px; overflow-y: auto; line-height: 1.8;">
+          <p style="color: #777; text-align: center;">Selecione uma passagem e clique em "Ler Passagem" para visualizar o texto.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal Genérico de Visualização -->
+  <div id="modal-visualizar" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-titulo" style="margin:0; color: var(--primary-color);"></h2>
+        <button id="btn-fechar-modal" class="modal-close">&times;</button>
+      </div>
+      <div id="modal-corpo"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE SELEÇÃO BÍBLICA REUTILIZÁVEL -->
+  <div id="modal-seletor-biblico" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="modal-biblia-titulo" style="margin:0;">Selecionar Passagem Bíblica</h3>
+        <button type="button" id="btn-fechar-seletor-biblico" class="modal-close">&times;</button>
+      </div>
+      
+      <div class="modal-body" style="padding-top: 15px;">
+        <!-- 1. Seleção do Livro -->
+        <div class="input-group" style="margin-bottom: 12px;">
+          <label style="font-weight: bold; font-size: 0.9rem;">Livro Bíblico:</label>
+          <select id="sel-biblia-livro">
+            <option value="">Selecione um livro...</option>
+          </select>
+        </div>
+
+        <!-- 2. Seleção de Início -->
+        <div class="input-row" style="margin-bottom: 12px;">
+          <div class="input-group">
+            <label id="lbl-cap-inicio" style="font-weight: bold; font-size: 0.85rem;">Capítulo Inicial:</label>
+            <select id="sel-cap-inicio" disabled><option value="">-</option></select>
+          </div>
+          <div class="input-group">
+            <label style="font-weight: bold; font-size: 0.85rem;">Versículo Inicial:</label>
+            <select id="sel-vso-inicio" disabled><option value="">-</option></select>
+          </div>
+        </div>
+
+        <!-- 3. Seleção de Fim -->
+        <div class="input-row" style="margin-bottom: 12px;">
+          <div class="input-group">
+            <label id="lbl-cap-fim" style="font-weight: bold; font-size: 0.85rem;">Capítulo Final:</label>
+            <select id="sel-cap-fim" disabled><option value="">-</option></select>
+          </div>
+          <div class="input-group">
+            <label style="font-weight: bold; font-size: 0.85rem;">Versículo Final:</label>
+            <select id="sel-vso-fim" disabled><option value="">-</option></select>
+          </div>
+        </div>
+
+        <!-- Preview da referência formatada -->
+        <div style="margin-top: 15px; padding: 10px; background: #f0f4f8; border-radius: 6px; text-align: center;">
+          <span style="font-size: 0.85rem; color: #666;">Referência Formatada:</span>
+          <div id="preview-referencia-biblica" style="font-weight: bold; font-size: 1.1rem; color: #2c3e50;">-</div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+        <button type="button" id="btn-cancelar-seletor" class="btn-perigo">Cancelar</button>
+        <button type="button" id="btn-aplicar-seletor" class="btn-sucesso" disabled>Aplicar no Campo</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pdf-template"></div>
+
+  <!-- Libs Externas -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
+
+  <!-- Ponto de entrada JS -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
