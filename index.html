@@ -293,7 +293,29 @@
         </div>
       </div>
     </div>
+    '<!-- Seção de Gerenciamento de Dados / Backup -->
+    <section class="secao-backup">
+      <h3>💾 Backup e Armazenamento</h3>
+      <p>Exporte seus sermões, estudos, devocionais e agenda para guardar em segurança ou mover para outro dispositivo.</p>
+      
+      <div class="acoes-backup">
+        <!-- Botão de Exportação -->
+        <button id="btn-exportar-backup" class="btn-primario">
+          📥 Exportar Backup (.json)
+        </button>
 
+        <!-- Botão de Importação com Input Oculto -->
+        <label for="input-importar-backup" class="btn-secundario">
+          📤 Importar Backup (.json)
+        </label>
+        <input 
+          type="file" 
+          id="input-importar-backup" 
+          accept=".json,application/json" 
+          style="display: none;" 
+        />
+      </div>
+    </section>
   </div>
 
   <!-- Modal Genérico de Visualização -->
