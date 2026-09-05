@@ -7,11 +7,16 @@ import { ScheduleManager } from './ScheduleManager.js';
 import { BibleSelectorManager } from './BibleSelectorManager.js';
 import BibleTextService from './BibleTextService.js';
 import StorageBackupService from './StorageBackupService.js';
+import FileSystemService from './FileSystemService.js';
+
+export const fileSystemService = new FileSystemService();
 
 document.addEventListener('DOMContentLoaded', async () => {
   const btnExportar = document.getElementById('btn-exportar-backup');
   const inputImportar = document.getElementById('input-importar-backup');
-
+  const btnSelecionarPasta = document.getElementById('btn-selecionar-pasta');
+  const statusPastaLocal = document.getElementById('status-pasta-local');
+  
   const tabManager = new TabManager();
   const sermonManager = new SermonManager(tabManager);
   const studyManager = new StudyManager(tabManager, sermonManager);
@@ -48,7 +53,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     conteinerTexto.innerHTML = "Carregando...";
     const texto = await bibleService.obterTexto(refInput.value);
 
-    // Formata a exibição linha por linha (uma para cada versículo)
     const htmlFormatado = texto
       .split('\n')
       .map(linha => `<p style="margin: 0 0 8px 0;">${linha}</p>`)
@@ -57,10 +61,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     conteinerTexto.innerHTML = htmlFormatado;
   });
 
-  // Integre os eventos de backup dentro do escopo onde os elementos foram selecionados
+  // Conexão com Pasta Local do Computador
+  btnSelecionarPasta?.addEventListener('click', async () => {
+    const conectado = await fileSystemService.selecionarDiretorio();
+    if (conectado) {
+      statusPastaLocal.textContent = `🟢 Conectado: ${fileSystemService.dirHandle.name}`;
+      statusPastaLocal.style.color = '#16a34a';
+    } else {
+      statusPastaLocal.textContent = '❌ Nenhuma pasta selecionada.';
+      statusPastaLocal.style.color = '#dc2626';
+    }
+  });
+
+  // Exportar Backup (.json)
   btnExportar?.addEventListener('click', async () => {
     try {
-      // Extrai os dados atualizados das tabelas do IndexedDB (db)
       const sermoes = await db.sermoes?.toArray() || [];
       const estudos = await db.estudos?.toArray() || [];
       const devocionais = await db.devocionais?.toArray() || [];
@@ -79,6 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Importar Backup (.json)
   inputImportar?.addEventListener('change', async (event) => {
     const arquivo = event.target.files[0];
     if (!arquivo) return;
@@ -96,7 +112,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       );
 
       if (confirma) {
-        // Atualiza a base do IndexedDB
         if (db.sermoes) { await db.sermoes.clear(); await db.sermoes.bulkAdd(dadosImportados.sermoes); }
         if (db.estudos) { await db.estudos.clear(); await db.estudos.bulkAdd(dadosImportados.estudos); }
         if (db.devocionais) { await db.devocionais.clear(); await db.devocionais.bulkAdd(dadosImportados.devocionais); }
@@ -116,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Carrega o sermão existente ou cria um limpo sem blocos padrão
+  // Inicializações padrão do IndexedDB
   const sermoes = await db.sermoes.toArray();
   if (sermoes.length > 0) {
     await sermonManager.carregarSermaoNoEditor(sermoes[0].id);

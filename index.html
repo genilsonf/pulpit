@@ -7,7 +7,7 @@
   
   <!-- CSS Quill.js e FullCalendar -->
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,6 +24,7 @@
     <button class="nav-tab" data-aba="devocional-editor">🙏 Construtor Devocional</button>
     <button class="nav-tab" data-aba="devocional-lista">📓 Devocionais</button>
     <button class="nav-tab" data-aba="agenda">📅 Agenda</button>
+    <button class="nav-tab" data-aba="backup">💾 Backup & Sincronização</button>
   </div>
 
   <div class="container">
@@ -43,7 +44,6 @@
         </div>
       </div>
 
-      <!-- Dentro do Construtor de Sermões (Aba Editor) -->
       <div id="lista-blocos"></div>
 
       <div class="acoes-container">
@@ -287,35 +287,50 @@
           </div>
         </div>
 
-        <!-- Área onde o texto do capítulo/versículos será exibido -->
         <div id="conteudo-texto-biblico" style="background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px; min-height: 200px; max-height: 600px; overflow-y: auto; line-height: 1.8;">
           <p style="color: #777; text-align: center;">Selecione uma passagem e clique em "Ler Passagem" para visualizar o texto.</p>
         </div>
       </div>
     </div>
-    '<!-- Seção de Gerenciamento de Dados / Backup -->
-    <section class="secao-backup">
-      <h3>💾 Backup e Armazenamento</h3>
-      <p>Exporte seus sermões, estudos, devocionais e agenda para guardar em segurança ou mover para outro dispositivo.</p>
-      
-      <div class="acoes-backup">
-        <!-- Botão de Exportação -->
-        <button id="btn-exportar-backup" class="btn-primario">
-          📥 Exportar Backup (.json)
-        </button>
 
-        <!-- Botão de Importação com Input Oculto -->
-        <label for="input-importar-backup" class="btn-secundario">
-          📤 Importar Backup (.json)
-        </label>
-        <input 
-          type="file" 
-          id="input-importar-backup" 
-          accept=".json,application/json" 
-          style="display: none;" 
-        />
+    <!-- ABA 9: DEDICADA A BACKUP E SINCRONIZAÇÃO DA PASTA LOCAL -->
+    <div id="aba-backup" class="aba-conteudo">
+      <div class="estudo-card" style="margin-bottom: 20px;">
+        <h2 style="margin-top: 0; color: var(--primary-color);">📁 Sincronização de Pasta Local (.md)</h2>
+        <p>Conecte uma pasta no seu computador para que seus sermões, estudos e devocionais sejam salvos automaticamente como arquivos Markdown (.md).</p>
+
+        <div id="painel-sincronizacao" style="padding: 15px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <button id="btn-selecionar-pasta" type="button" class="btn-primario">
+            📂 Selecionar / Conectar Pasta Local
+          </button>
+          <span id="status-pasta-local" style="font-weight: 500; color: #64748b;">
+            Nenhuma pasta conectada.
+          </span>
+        </div>
       </div>
-    </section>
+
+      <div class="estudo-card">
+        <h2 style="margin-top: 0; color: var(--primary-color);">💾 Backup Completo do Banco de Dados (.json)</h2>
+        <p>Exporte uma cópia completa de segurança de todas as tabelas (Sermões, Estudos, Devocionais e Agenda) ou restaure a partir de um arquivo gerado anteriormente.</p>
+        
+        <div class="acoes-backup" style="display: flex; gap: 15px; margin-top: 15px;">
+          <button id="btn-exportar-backup" class="btn-sucesso">
+            📥 Exportar Backup (.json)
+          </button>
+
+          <label for="input-importar-backup" class="btn-secundario" style="cursor: pointer; display: inline-block;">
+            📤 Importar Backup (.json)
+          </label>
+          <input 
+            type="file" 
+            id="input-importar-backup" 
+            accept=".json,application/json" 
+            style="display: none;" 
+          />
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Modal Genérico de Visualização -->
@@ -338,7 +353,6 @@
       </div>
       
       <div class="modal-body" style="padding-top: 15px;">
-        <!-- 1. Seleção do Livro -->
         <div class="input-group" style="margin-bottom: 12px;">
           <label style="font-weight: bold; font-size: 0.9rem;">Livro Bíblico:</label>
           <select id="sel-biblia-livro">
@@ -346,7 +360,6 @@
           </select>
         </div>
 
-        <!-- 2. Seleção de Início -->
         <div class="input-row" style="margin-bottom: 12px;">
           <div class="input-group">
             <label id="lbl-cap-inicio" style="font-weight: bold; font-size: 0.85rem;">Capítulo Inicial:</label>
@@ -358,7 +371,6 @@
           </div>
         </div>
 
-        <!-- 3. Seleção de Fim -->
         <div class="input-row" style="margin-bottom: 12px;">
           <div class="input-group">
             <label id="lbl-cap-fim" style="font-weight: bold; font-size: 0.85rem;">Capítulo Final:</label>
@@ -370,7 +382,6 @@
           </div>
         </div>
 
-        <!-- Preview da referência formatada -->
         <div style="margin-top: 15px; padding: 10px; background: #f0f4f8; border-radius: 6px; text-align: center;">
           <span style="font-size: 0.85rem; color: #666;">Referência Formatada:</span>
           <div id="preview-referencia-biblica" style="font-weight: bold; font-size: 1.1rem; color: #2c3e50;">-</div>
@@ -390,8 +401,8 @@
   <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
   <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/locales/pt-br.min.js"></script>
 
   <!-- Ponto de entrada JS -->
   <script type="module" src="src/main.js"></script>

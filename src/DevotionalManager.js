@@ -1,4 +1,5 @@
 import { db } from './db.js';
+import { sincronizarEntidadeComArquivo } from './sync.js';
 
 export class DevotionalManager {
   constructor(tabManager) {
@@ -37,11 +38,15 @@ export class DevotionalManager {
     });
 
     await db.devocionais.put(devObjeto);
-    document.getElementById('status-salvamento').innerText = `Devocional salva às ${new Date().toLocaleTimeString()}`;
+    await sincronizarEntidadeComArquivo('devocionais', devObjeto);
+
+    const statusEl = document.getElementById('status-salvamento');
+    if (statusEl) statusEl.innerText = `Devocional salva às ${new Date().toLocaleTimeString()}`;
   }
 
   dispararAutoSaveDevocional() {
-    document.getElementById('status-salvamento').innerText = "Salvando devocional...";
+    const statusEl = document.getElementById('status-salvamento');
+    if (statusEl) statusEl.innerText = "Salvando devocional...";
     clearTimeout(this.tempoEsperaDevocional);
     this.tempoEsperaDevocional = setTimeout(() => this.salvarDevocionalLocalmente(), 800);
   }
@@ -68,7 +73,8 @@ export class DevotionalManager {
       if (el) el.value = '';
     });
 
-    document.getElementById('dev-data').value = new Date().toISOString().split('T')[0];
+    const devDataEl = document.getElementById('dev-data');
+    if (devDataEl) devDataEl.value = new Date().toISOString().split('T')[0];
 
     await this.salvarDevocionalLocalmente();
     this.tabManager.trocarAba('devocional-editor');

@@ -1,4 +1,5 @@
 import { db } from './db.js';
+import { sincronizarEntidadeComArquivo } from './sync.js';
 
 export class StudyManager {
   constructor(tabManager, sermonManager) {
@@ -16,7 +17,7 @@ export class StudyManager {
       Devocional: "Motiva os crentes a aprofundar seu relacionamento com Jesus, amando-O mais e mais e buscando crescer na Graça e conhecimento dEle; apresenta os desafios do seguir a Cristo. É a mensagem da comunhão com Deus.",
       Missionário: "Desafia os crentes a uma entrega de seus dons e talentos a serviço do Senhor, a uma resposta missionária. É a mensagem da consagração.",
       Pastoral: "Apresenta o bálsamo de Cristo nos momentos de dificuldade e crises; tem um grande alcance. Deve ser pregado sempre e não apenas nas catástrofes. É a mensagem de alento ou conforto. Também pode ser uma mensagem exortativa.",
-      Ético: "Persuade a uma melhor comunhão com o próximo, pelo exemplo de Cristo, desafiando os ouvintes a vivenciarem o amor e o justiça em seus relacionamentos. É a mensagem do amor ao próximo.",
+      Ético: "Persuade a uma melhor comunhão com el próximo, pelo exemplo de Cristo, desafiando os ouvintes a vivenciarem o amor e o justiça em seus relacionamentos. É a mensagem do amor ao próximo.",
       Doutrinário: "Enfoca, de modo especial, uma Doutrina bíblica. Tem sido chamado de informativo, uma vez que visa informar, esclarecer, infundir convicção bíblica. É a mensagem elucidadora."
     };
   }
@@ -42,7 +43,7 @@ export class StudyManager {
   atualizarDescricaoProposito() {
     const valor = document.getElementById('est-propositoBasico').value;
     const box = document.getElementById('desc-proposito-basico');
-    box.innerText = this.TEXTOS_PROPOSITO[valor] || "Selecione uma opção acima para visualizar o significado.";
+    if (box) box.innerText = this.TEXTOS_PROPOSITO[valor] || "Selecione uma opção acima para visualizar o significado.";
   }
 
   async salvarEstudoLocalmente() {
@@ -59,11 +60,15 @@ export class StudyManager {
     });
 
     await db.estudos.put(estudoObjeto);
-    document.getElementById('status-salvamento').innerText = `Estudo salvo às ${new Date().toLocaleTimeString()}`;
+    await sincronizarEntidadeComArquivo('estudos', estudoObjeto);
+
+    const statusEl = document.getElementById('status-salvamento');
+    if (statusEl) statusEl.innerText = `Estudo salvo às ${new Date().toLocaleTimeString()}`;
   }
 
   dispararAutoSaveEstudo() {
-    document.getElementById('status-salvamento').innerText = "Salvando estudo...";
+    const statusEl = document.getElementById('status-salvamento');
+    if (statusEl) statusEl.innerText = "Salvando estudo...";
     clearTimeout(this.tempoEsperaEstudo);
     this.tempoEsperaEstudo = setTimeout(() => this.salvarEstudoLocalmente(), 800);
   }
@@ -183,36 +188,15 @@ export class StudyManager {
 
     const novoId = 'sermao_' + Date.now();
 
-    // Blocos apenas com títulos e conteúdos totalmente vazios
     const blocosIniciais = [
-      {
-        id: 'bloco_' + Date.now() + '_1',
-        tituloBloco: 'Introdução',
-        conteudoHtml: ''
-      },
-      {
-        id: 'bloco_' + Date.now() + '_2',
-        tituloBloco: 'Elucidação / Ideia Central',
-        conteudoHtml: ''
-      },
-      {
-        id: 'bloco_' + Date.now() + '_3',
-        tituloBloco: 'Ponto Principal 1',
-        conteudoHtml: ''
-      },
-      {
-        id: 'bloco_' + Date.now() + '_4',
-        tituloBloco: 'Aplicações Práticas',
-        conteudoHtml: ''
-      },
-      {
-        id: 'bloco_' + Date.now() + '_5',
-        tituloBloco: 'Conclusão',
-        conteudoHtml: ''
-      }
+      { id: 'bloco_' + Date.now() + '_1', tituloBloco: 'Introdução', conteudoHtml: '' },
+      { id: 'bloco_' + Date.now() + '_2', tituloBloco: 'Elucidação / Ideia Central', conteudoHtml: '' },
+      { id: 'bloco_' + Date.now() + '_3', tituloBloco: 'Ponto Principal 1', conteudoHtml: '' },
+      { id: 'bloco_' + Date.now() + '_4', tituloBloco: 'Aplicações Práticas', conteudoHtml: '' },
+      { id: 'bloco_' + Date.now() + '_5', tituloBloco: 'Conclusão', conteudoHtml: '' }
     ];
 
-    await db.sermoes.put({
+    const sermaoObjeto = {
       id: novoId,
       titulo: tema || texto || 'Novo Sermão',
       passagem: texto || '',
@@ -222,7 +206,10 @@ export class StudyManager {
       ocasio: '',
       blocos: blocosIniciais,
       atualizadoEm: new Date().toISOString()
-    });
+    };
+
+    await db.sermoes.put(sermaoObjeto);
+    await sincronizarEntidadeComArquivo('sermoes', sermaoObjeto);
 
     await this.sermonManager.carregarSermaoNoEditor(novoId);
     alert('Sermão criado com sucesso a partir dos dados do seu estudo!');

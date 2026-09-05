@@ -1,4 +1,5 @@
 import { db } from './db.js';
+import { sincronizarEntidadeComArquivo } from './sync.js';
 
 export class SermonManager {
   constructor(tabManager) {
@@ -30,57 +31,55 @@ export class SermonManager {
   }
 
   criarElementoBloco(idBloco, tituloBloco = '', conteudoHtml = '') {
-  const container = document.getElementById('lista-blocos');
-  const divBloco = document.createElement('div');
-  divBloco.className = 'bloco-card';
-  divBloco.id = `card-${idBloco}`;
-  
-  divBloco.innerHTML = `
-    <div class="bloco-header">
-      <input type="text" class="titulo-bloco" value="${tituloBloco}" placeholder="Nome do Bloco (ex: Introdução, Ponto 1)...">
-      <div class="controles-bloco">
-        <button class="btn-acao btn-subir" title="Mover para cima">▲</button>
-        <button class="btn-acao btn-descer" title="Mover para baixo">▼</button>
-        <button class="btn-acao btn-remover" title="Excluir Bloco">✕</button>
+    const container = document.getElementById('lista-blocos');
+    const divBloco = document.createElement('div');
+    divBloco.className = 'bloco-card';
+    divBloco.id = `card-${idBloco}`;
+    
+    divBloco.innerHTML = `
+      <div class="bloco-header">
+        <input type="text" class="titulo-bloco" value="${tituloBloco}" placeholder="Nome do Bloco (ex: Introdução, Ponto 1)...">
+        <div class="controles-bloco">
+          <button class="btn-acao btn-subir" title="Mover para cima">▲</button>
+          <button class="btn-acao btn-descer" title="Mover para baixo">▼</button>
+          <button class="btn-acao btn-remover" title="Excluir Bloco">✕</button>
+        </div>
       </div>
-    </div>
-    <div id="editor-${idBloco}" class="editor-container"></div>
-  `;
+      <div id="editor-${idBloco}" class="editor-container"></div>
+    `;
 
-  container.appendChild(divBloco);
+    container.appendChild(divBloco);
 
-  /* global Quill */
-  // Inicialização independente do Quill para cada bloco
-  const quill = new Quill(`#editor-${idBloco}`, {
-    theme: 'snow',
-    placeholder: `Escreva sobre ${tituloBloco || 'este bloco'}...`,
-    modules: {
-      toolbar: [
-        [{ 'header': [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        ['blockquote', 'code-block'],
-        ['clean']
-      ]
+    /* global Quill */
+    const quill = new Quill(`#editor-${idBloco}`, {
+      theme: 'snow',
+      placeholder: `Escreva sobre ${tituloBloco || 'este bloco'}...`,
+      modules: {
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['blockquote', 'code-block'],
+          ['clean']
+        ]
+      }
+    });
+
+    if (conteudoHtml) {
+      quill.root.innerHTML = conteudoHtml;
     }
-  });
 
-  if (conteudoHtml) {
-    quill.root.innerHTML = conteudoHtml;
+    quill.on('text-change', () => this.dispararAutoSaveSermao());
+    
+    const inputTitulo = divBloco.querySelector('.titulo-bloco');
+    inputTitulo.addEventListener('input', () => this.dispararAutoSaveSermao());
+
+    divBloco.querySelector('.btn-subir').addEventListener('click', () => this.moverBloco(idBloco, -1));
+    divBloco.querySelector('.btn-descer').addEventListener('click', () => this.moverBloco(idBloco, 1));
+    divBloco.querySelector('.btn-remover').addEventListener('click', () => this.removerBloco(idBloco));
+
+    this.editoresQuill[idBloco] = quill;
   }
-
-  // Eventos de alteração e botões do bloco
-  quill.on('text-change', () => this.dispararAutoSaveSermao());
-  
-  const inputTitulo = divBloco.querySelector('.titulo-bloco');
-  inputTitulo.addEventListener('input', () => this.dispararAutoSaveSermao());
-
-  divBloco.querySelector('.btn-subir').addEventListener('click', () => this.moverBloco(idBloco, -1));
-  divBloco.querySelector('.btn-descer').addEventListener('click', () => this.moverBloco(idBloco, 1));
-  divBloco.querySelector('.btn-remover').addEventListener('click', () => this.removerBloco(idBloco));
-
-  this.editoresQuill[idBloco] = quill;
-}
 
   moverBloco(idBloco, direcao) {
     const card = document.getElementById(`card-${idBloco}`);
@@ -110,94 +109,99 @@ export class SermonManager {
   }
 
   async salvarSermaoLocalmente() {
-  if (!this.SERMAO_ATUAL_ID) return;
+    if (!this.SERMAO_ATUAL_ID) return;
 
-  const titulo = document.getElementById('titulo')?.value || '';
-  const passagem = document.getElementById('passagem')?.value || '';
-  const dataPregacao = document.getElementById('dataPregacao')?.value || '';
-  const horarioPregacao = document.getElementById('horarioPregacao')?.value || '';
-  const local = document.getElementById('local')?.value || '';
-  const ocasio = document.getElementById('ocasio')?.value || '';
-  
-  const blocosData = [];
-  document.querySelectorAll('.bloco-card').forEach(card => {
-    const idBloco = card.id.replace('card-', '');
-    const tituloBloco = card.querySelector('.titulo-bloco')?.value || '';
-    const conteudoHtml = this.editoresQuill[idBloco] ? this.editoresQuill[idBloco].root.innerHTML : '';
-    blocosData.push({ id: idBloco, tituloBloco, conteudoHtml });
-  });
+    const titulo = document.getElementById('titulo')?.value || '';
+    const passagem = document.getElementById('passagem')?.value || '';
+    const dataPregacao = document.getElementById('dataPregacao')?.value || '';
+    const horarioPregacao = document.getElementById('horarioPregacao')?.value || '';
+    const local = document.getElementById('local')?.value || '';
+    const ocasio = document.getElementById('ocasio')?.value || '';
+    
+    const blocosData = [];
+    document.querySelectorAll('.bloco-card').forEach(card => {
+      const idBloco = card.id.replace('card-', '');
+      const tituloBloco = card.querySelector('.titulo-bloco')?.value || '';
+      const conteudoHtml = this.editoresQuill[idBloco] ? this.editoresQuill[idBloco].root.innerHTML : '';
+      blocosData.push({ id: idBloco, tituloBloco, conteudoHtml });
+    });
 
-  await db.sermoes.put({
-    id: this.SERMAO_ATUAL_ID,
-    titulo, passagem, dataPregacao, horarioPregacao, local, ocasio,
-    blocos: blocosData,
-    atualizadoEm: new Date().toISOString()
-  });
+    const sermaoObjeto = {
+      id: this.SERMAO_ATUAL_ID,
+      titulo, passagem, dataPregacao, horarioPregacao, local, ocasio,
+      blocos: blocosData,
+      atualizadoEm: new Date().toISOString()
+    };
 
-  const statusEl = document.getElementById('status-salvamento');
-  if (statusEl) statusEl.innerText = `Sermão salvo às ${new Date().toLocaleTimeString()}`;
+    await db.sermoes.put(sermaoObjeto);
+    await sincronizarEntidadeComArquivo('sermoes', sermaoObjeto);
+
+    const statusEl = document.getElementById('status-salvamento');
+    if (statusEl) statusEl.innerText = `Sermão salvo às ${new Date().toLocaleTimeString()}`;
   }
 
   dispararAutoSaveSermao() {
-    document.getElementById('status-salvamento').innerText = "Salvando sermão...";
+    const statusEl = document.getElementById('status-salvamento');
+    if (statusEl) statusEl.innerText = "Salvando sermão...";
     clearTimeout(this.tempoEsperaSermao);
     this.tempoEsperaSermao = setTimeout(() => this.salvarSermaoLocalmente(), 800);
   }
 
-async carregarSermaoNoEditor(id) {
-  this.SERMAO_ATUAL_ID = id;
-  const listaBlocos = document.getElementById('lista-blocos');
-  if (listaBlocos) listaBlocos.innerHTML = '';
-  this.editoresQuill = {};
+  async carregarSermaoNoEditor(id) {
+    this.SERMAO_ATUAL_ID = id;
+    const listaBlocos = document.getElementById('lista-blocos');
+    if (listaBlocos) listaBlocos.innerHTML = '';
+    this.editoresQuill = {};
 
-  const sermao = await db.sermoes.get(id);
-  if (sermao) {
-    if (document.getElementById('titulo')) document.getElementById('titulo').value = sermao.titulo || '';
-    if (document.getElementById('passagem')) document.getElementById('passagem').value = sermao.passagem || '';
-    if (document.getElementById('dataPregacao')) document.getElementById('dataPregacao').value = sermao.dataPregacao || '';
-    if (document.getElementById('horarioPregacao')) document.getElementById('horarioPregacao').value = sermao.horarioPregacao || '';
-    if (document.getElementById('local')) document.getElementById('local').value = sermao.local || '';
-    if (document.getElementById('ocasio')) document.getElementById('ocasio').value = sermao.ocasio || '';
+    const sermao = await db.sermoes.get(id);
+    if (sermao) {
+      if (document.getElementById('titulo')) document.getElementById('titulo').value = sermao.titulo || '';
+      if (document.getElementById('passagem')) document.getElementById('passagem').value = sermao.passagem || '';
+      if (document.getElementById('dataPregacao')) document.getElementById('dataPregacao').value = sermao.dataPregacao || '';
+      if (document.getElementById('horarioPregacao')) document.getElementById('horarioPregacao').value = sermao.horarioPregacao || '';
+      if (document.getElementById('local')) document.getElementById('local').value = sermao.local || '';
+      if (document.getElementById('ocasio')) document.getElementById('ocasio').value = sermao.ocasio || '';
 
-    if (sermao.blocos && sermao.blocos.length > 0) {
-      sermao.blocos.forEach(b => this.criarElementoBloco(b.id, b.tituloBloco, b.conteudoHtml));
+      if (sermao.blocos && sermao.blocos.length > 0) {
+        sermao.blocos.forEach(b => this.criarElementoBloco(b.id, b.tituloBloco, b.conteudoHtml));
+      }
     }
+
+    this.tabManager.trocarAba('aba-editor');
   }
 
-  // AJUSTADO: Passando 'aba-editor' com o prefixo exato do HTML
-  this.tabManager.trocarAba('aba-editor');
-}
+  async criarNovoSermaoVazio() {
+    const novoId = 'sermao_' + Date.now();
+    this.SERMAO_ATUAL_ID = novoId;
 
-async criarNovoSermaoVazio() {
-  const novoId = 'sermao_' + Date.now();
-  this.SERMAO_ATUAL_ID = novoId;
+    if (document.getElementById('titulo')) document.getElementById('titulo').value = '';
+    if (document.getElementById('passagem')) document.getElementById('passagem').value = '';
+    if (document.getElementById('dataPregacao')) document.getElementById('dataPregacao').value = '';
+    if (document.getElementById('horarioPregacao')) document.getElementById('horarioPregacao').value = '';
+    if (document.getElementById('local')) document.getElementById('local').value = '';
+    if (document.getElementById('ocasio')) document.getElementById('ocasio').value = '';
 
-  if (document.getElementById('titulo')) document.getElementById('titulo').value = '';
-  if (document.getElementById('passagem')) document.getElementById('passagem').value = '';
-  if (document.getElementById('dataPregacao')) document.getElementById('dataPregacao').value = '';
-  if (document.getElementById('horarioPregacao')) document.getElementById('horarioPregacao').value = '';
-  if (document.getElementById('local')) document.getElementById('local').value = '';
-  if (document.getElementById('ocasio')) document.getElementById('ocasio').value = '';
+    const listaBlocos = document.getElementById('lista-blocos');
+    if (listaBlocos) listaBlocos.innerHTML = '';
+    this.editoresQuill = {};
 
-  const listaBlocos = document.getElementById('lista-blocos');
-  if (listaBlocos) listaBlocos.innerHTML = '';
-  this.editoresQuill = {};
+    const sermaoObjeto = {
+      id: novoId,
+      titulo: '',
+      passagem: '',
+      dataPregacao: '',
+      horarioPregacao: '',
+      local: '',
+      ocasio: '',
+      blocos: [],
+      atualizadoEm: new Date().toISOString()
+    };
 
-  await db.sermoes.put({
-    id: novoId,
-    titulo: '',
-    passagem: '',
-    dataPregacao: '',
-    horarioPregacao: '',
-    local: '',
-    ocasio: '',
-    blocos: [],
-    atualizadoEm: new Date().toISOString()
-  });
+    await db.sermoes.put(sermaoObjeto);
+    await sincronizarEntidadeComArquivo('sermoes', sermaoObjeto);
 
-  // AJUSTADO: Passando 'aba-editor'
-  this.tabManager.trocarAba('aba-editor');
-}
+    this.tabManager.trocarAba('aba-editor');
+  }
 
   async excluirSermao(id) {
     const sermao = await db.sermoes.get(id);
